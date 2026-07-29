@@ -1,33 +1,40 @@
 import requests
+from collections import Counter
 
-# Remotive provides a free API for live tech jobs with no key required!
+
 url = "https://remotive.com/api/remote-jobs"
+params = {'category': 'software-dev', 'limit': 20}
 
-# Filter parameters: search specifically for software/tech roles
-params = {
-    'category': 'software-dev',
-    'limit': 5
-}
-
-print("Fetching live job data from Remotive API...\n")
+print("Fetching 20 live jobs to analyze tech skills...\n")
 response = requests.get(url, params=params)
 
 if response.status_code == 200:
-    data = response.json()
-    jobs = data.get('jobs', [])
+    jobs = response.json().get('jobs', [])
     
-    print(f"✅ Success! Fetched {len(jobs)} live jobs:\n")
     
-    for i, job in enumerate(jobs, 1):
-        title = job.get('title')
-        company = job.get('company_name')
-        category = job.get('category')
-        tags = ", ".join(job.get('tags', [])) # Extract skills/tags listed
+    target_skills = ['python', 'sql', 'aws', 'docker', 'react', 'javascript', 'api', 'git', 'linux', 'kubernetes']
+    
+    
+    skill_counts = Counter()
+    
+    
+    for job in jobs:
         
-        print(f"{i}. Job Title: {title}")
-        print(f"   Company  : {company}")
-        print(f"   Category : {category}")
-        print(f"   Skills/Tags: {tags}")
-        print("-" * 50)
+        job_text = f"{job.get('title', '')} {' '.join(job.get('tags', []))}".lower()
+        
+        
+        for skill in target_skills:
+            if skill in job_text:
+                skill_counts[skill] += 1
+                
+    
+    print("=" * 40)
+    print("      LIVE TECH SKILL DEMAND ANALYSIS    ")
+    print("=" * 40)
+    for skill, count in skill_counts.most_common():
+        percentage = (count / len(jobs)) * 100
+        print(f"🔹 {skill.upper():<12} : Mentioned in {count}/{len(jobs)} jobs ({percentage:.1f}%)")
+    print("=" * 40)
+
 else:
-    print(f"❌ Failed to fetch data. Status Code: {response.status_code}")
+    print(f"Failed to fetch job data. Status Code: {response.status_code}")
