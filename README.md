@@ -18,7 +18,15 @@ An automated data pipeline and interactive web dashboard that analyzes real-time
 
 ## 🏃 How to Run Locally
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/Vaishnavi698/tech-job-market-analyzer.git](https://github.com/Vaishnavi698/tech-job-market-analyzer.git)
-   cd tech-job-market-analyzer
+1. Clone the repository:
+git clone https://github.com/Vaishnavi698/tech-job-market-analyzer.git
+cd tech-job-market-analyzer
+
+2. Install dependencies:
+pip install requests pandas streamlit plotly
+
+3. Run the Data Pipeline:
+python main.py
+
+4. Launch the Streamlit Dashboard:
+python -m streamlit run app.py
