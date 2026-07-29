@@ -1,4 +1,6 @@
 # 📊 Live Tech Job-Market Analyzer
+🔗 **Live Demo:** [Click Here to View the Interactive Dashboard]
+(https://tech-job-market-analyzer.streamlit.app/)
 
 An automated data pipeline and interactive web dashboard that analyzes real-time technical skill demands from live tech job postings.
 
