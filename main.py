@@ -1,49 +1,50 @@
+import sqlite3
 import requests
-from collections import Counter
 import pandas as pd
+from collections import Counter
+import re
 
 
-url = "https://remotive.com/api/remote-jobs"
-params = {'category': 'software-dev', 'limit': 30}
+conn = sqlite3.connect('jobs_data.db')
+cursor = conn.cursor()
+
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS skill_demand (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        skill TEXT UNIQUE,
+        count INTEGER
+    )
+''')
+conn.commit()
+
 
 print("Fetching live jobs from Remotive API...")
-response = requests.get(url, params=params)
+url = "https://remotive.com/api/remote-jobs?limit=50"
+response = requests.get(url)
+data = response.json()
 
-if response.status_code == 200:
-    jobs = response.json().get('jobs', [])
-    
-    target_skills = ['python', 'sql', 'aws', 'docker', 'react', 'javascript', 'api', 'git', 'linux', 'kubernetes']
-    skill_counts = Counter()
-    
-   
-    for job in jobs:
-        job_text = f"{job.get('title', '')} {' '.join(job.get('tags', []))}".lower()
-        for skill in target_skills:
-            if skill in job_text:
-                skill_counts[skill] += 1
+jobs = data.get('jobs', [])
 
-    
-    data = []
-    total_jobs = len(jobs)
-    
-    for skill, count in skill_counts.items():
-        percentage = round((count / total_jobs) * 100, 2)
-        data.append({
-            'Skill': skill.upper(),
-            'Mentions': count,
-            'Demand_Percentage': percentage
-        })
-    
-    
-    df = pd.DataFrame(data)
-    df = df.sort_values(by='Mentions', ascending=False)
-   
-    csv_filename = "skill_demand.csv"
-    df.to_csv(csv_filename, index=False)
-    
-    print("\n✅ Analysis Complete! Here is your structured data sample:\n")
-    print(df.head(10)) # Print top 10 rows
-    print(f"\n📁 Data successfully saved to '{csv_filename}'")
 
-else:
-    print(f"Failed to fetch job data. Status Code: {response.status_code}")
+target_skills = ['python', 'sql', 'aws', 'docker', 'kubernetes', 'spark', 'react', 'java', 'c++', 'pandas']
+skill_counts = Counter()
+
+
+for job in jobs:
+    description = job.get('description', '').lower()
+    for skill in target_skills:
+        if re.search(r'\b' + re.escape(skill) + r'\b', description):
+            skill_counts[skill] += 1
+
+
+for skill, count in skill_counts.items():
+    cursor.execute('''
+        INSERT INTO skill_demand (skill, count)
+        VALUES (?, ?)
+        ON CONFLICT(skill) DO UPDATE SET count=excluded.count
+    ''', (skill, count))
+
+conn.commit()
+conn.close()
+print("Data successfully saved to SQLite database ('jobs_data.db')!")

@@ -1,45 +1,41 @@
 import streamlit as st
+import sqlite3
 import pandas as pd
 import plotly.express as px
 
+st.set_page_config(page_title="Live Tech Job-Market Analyzer", layout="wide")
 
-st.set_page_config(page_title="Tech Job Market Analyzer", layout="wide")
-st.title("📊 Live Tech Job Market Analyzer")
-st.markdown("Visualizing real-time skill demand across live developer job postings.")
+st.title("📊 Live Tech Job-Market Analyzer")
+st.write("Real-time technical skill demand fetched from live API and queried from a SQLite database backend.")
 
+# Connect to SQLite Database and Read Data
+def load_data():
+    conn = sqlite3.connect('jobs_data.db')
+    df = pd.read_sql_query("SELECT skill, count FROM skill_demand ORDER BY count DESC", conn)
+    conn.close()
+    return df
 
 try:
-    df = pd.read_csv("skill_demand.csv")
+    df = load_data()
 
-   
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric(label="Total Skills Tracked", value=len(df))
-    with col2:
-        st.metric(label="Top Demanded Skill", value=df.iloc[0]['Skill'])
-    with col3:
-        st.metric(label="Top Skill Coverage", value=f"{df.iloc[0]['Demand_Percentage']}%")
+    if not df.empty:
+        # Top Skills Bar Chart
+        fig = px.bar(
+            df, 
+            x='skill', 
+            y='count', 
+            title="Most Demanded Technical Skills",
+            labels={'skill': 'Technical Skill', 'count': 'Number of Job Postings'},
+            color='count',
+            color_continuous_scale='Viridis'
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("---")
+        # Raw Database Table View
+        st.subheader("💾 Database Table View (`jobs_data.db`)")
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.warning("Database is empty. Please run `python main.py` first.")
 
-   
-    st.subheader("🔥 Skill Demand Frequency")
-    
-    fig = px.bar(
-        df,
-        x='Skill',
-        y='Mentions',
-        text='Demand_Percentage',
-        labels={'Mentions': 'Number of Job Postings', 'Skill': 'Technology / Skill'},
-        color='Mentions',
-        color_continuous_scale='Viridis'
-    )
-    fig.update_traces(texttemplate='%{text}%', textposition='outside')
-    st.plotly_chart(fig, use_container_width=True)
-
-    
-    st.subheader("📋 Raw Skill Demand Data")
-    st.dataframe(df, use_container_width=True)
-
-except FileNotFoundError:
-    st.error("⚠️ `skill_demand.csv` not found! Please run `python main.py` first to generate data.")
+except Exception as e:
+    st.error(f"Error loading database: {e}")
