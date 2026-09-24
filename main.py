@@ -2,13 +2,19 @@ import sqlite3
 import re
 import requests
 
-# 1. API Configuration
-API_URL = "https://remotive.com/api/remote-jobs?category=software-dev&limit=100"
+# 1. API Configuration - Ingesting a larger limit (200 jobs)
+API_URL = "https://remotive.com/api/remote-jobs?limit=200"
 
 # Target Technical Skills to Track
 TARGET_SKILLS = [
     "python", "java", "javascript", "typescript", "react", "node", 
     "sql", "aws", "azure", "docker", "kubernetes", "spark", "pytorch"
+]
+
+# Keywords to filter out non-tech jobs (e.g. Writers, Assistants, Sales)
+TECH_KEYWORDS = [
+    "developer", "engineer", "data", "software", "architect", 
+    "analyst", "qa", "devops", "tech", "frontend", "backend", "full-stack", "ai"
 ]
 
 def init_db():
@@ -54,7 +60,7 @@ def fetch_and_store_jobs():
         return
 
     jobs_data = response.json().get('jobs', [])
-    print(f"Processing {len(jobs_data)} job postings...")
+    print(f"Fetched {len(jobs_data)} raw job postings from API...")
 
     conn = sqlite3.connect('jobs_data.db')
     cursor = conn.cursor()
@@ -69,6 +75,11 @@ def fetch_and_store_jobs():
     for job in jobs_data:
         job_id = job.get('id')
         title = job.get('title', 'Unknown Title')
+        
+        # KEYWORD FILTER (Code Improvement): Skip non-tech roles
+        if not any(keyword in title.lower() for keyword in TECH_KEYWORDS):
+            continue
+
         company = job.get('company_name', 'Unknown Company')
         category = job.get('category', 'Software Development')
         url = job.get('url', '#')
@@ -94,7 +105,7 @@ def fetch_and_store_jobs():
 
     conn.commit()
     conn.close()
-    print(f"✅ Stored {inserted_jobs} jobs and {skill_mappings} skill matches in 'jobs_data.db'!")
+    print(f"✅ Stored {inserted_jobs} tech jobs and {skill_mappings} skill matches in 'jobs_data.db'!")
 
 if __name__ == "__main__":
     init_db()

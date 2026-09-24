@@ -3,20 +3,18 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-st.set_page_config(page_title="Tech Job Market & Skill Intelligence", layout="wide")
+st.set_page_config(page_title="Tech Job Market & Skill Intelligence Engine", layout="wide")
 
 st.title("📊 Tech Job Market & Skill Intelligence Engine")
 st.write("Explore real-time technical skill demand, top hiring companies, and open job listings.")
 
-# Database Connection Helper
 def get_db_connection():
-    conn = sqlite3.connect('jobs_data.db')
-    return conn
+    return sqlite3.connect('jobs_data.db')
 
 try:
     conn = get_db_connection()
 
-    # --- 1. OVERALL SKILL DEMAND ANALYSIS ---
+    # --- 1. OVERALL DATA QUERIES ---
     skills_df = pd.read_sql_query('''
         SELECT skill, COUNT(job_id) as job_count 
         FROM job_skills 
@@ -32,10 +30,15 @@ try:
         LIMIT 10
     ''', conn)
 
-    # --- TOP KPIS ---
     total_jobs = pd.read_sql_query("SELECT COUNT(*) as count FROM jobs", conn).iloc[0]['count']
     total_skills = len(skills_df)
     
+    # Capitalize skill names for presentation
+    skills_df['skill_display'] = skills_df['skill'].str.title()
+    skills_df.loc[skills_df['skill_display'] == 'Sql', 'skill_display'] = 'SQL'
+    skills_df.loc[skills_df['skill_display'] == 'Aws', 'skill_display'] = 'AWS'
+
+    # --- TOP KPIS ---
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
     col_kpi1.metric("Total Active Job Listings", total_jobs)
     col_kpi2.metric("Tracked Skills", total_skills)
@@ -43,19 +46,21 @@ try:
 
     st.divider()
 
-    # --- CHARTS SECTION ---
+    # --- CHARTS SECTION (CLEANED UP & HORIZONTAL) ---
     col_left, col_right = st.columns(2)
 
     with col_left:
         st.subheader("💡 Technical Skill Demand")
         fig_skills = px.bar(
             skills_df, 
-            x='skill', 
-            y='job_count', 
+            x='job_count', 
+            y='skill_display', 
+            orientation='h',
+            labels={'skill_display': 'Skill', 'job_count': 'Job Postings'},
             color='job_count',
-            labels={'skill': 'Skill', 'job_count': 'Job Postings'},
-            color_continuous_scale='Viridis'
+            color_continuous_scale='Blues'
         )
+        fig_skills.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False)
         st.plotly_chart(fig_skills, use_container_width=True)
 
     with col_right:
@@ -69,26 +74,21 @@ try:
             color='open_positions',
             color_continuous_scale='Blues'
         )
-        fig_comp.update_layout(yaxis={'categoryorder':'total ascending'})
+        fig_comp.update_layout(yaxis={'categoryorder':'total ascending'}, showlegend=False)
         st.plotly_chart(fig_comp, use_container_width=True)
 
     st.divider()
 
-    # --- 2. GRANULAR DRILL-DOWN SECTION ---
+    # --- DRILL-DOWN SECTION ---
     st.subheader("🔍 Skill & Company Drill-Down")
-    st.write("Filter to see specific companies hiring for your target skill with direct application links.")
-
+    
     selected_skill = st.selectbox(
         "Select a Tech Skill to Inspect:", 
         options=["All Skills"] + list(skills_df['skill'].unique())
     )
 
-    # SQL Relational JOIN Query to Fetch Job Details for Selected Skill
     if selected_skill == "All Skills":
-        query = '''
-            SELECT DISTINCT j.title, j.company_name, j.url, j.publication_date 
-            FROM jobs j
-        '''
+        query = "SELECT DISTINCT title, company_name, url, publication_date FROM jobs"
         detailed_jobs = pd.read_sql_query(query, conn)
     else:
         query = '''
@@ -99,7 +99,10 @@ try:
         '''
         detailed_jobs = pd.read_sql_query(query, conn, params=(selected_skill,))
 
-    # Format Table Display
+    # Format ISO date strings to clean YYYY-MM-DD format
+    if not detailed_jobs.empty and 'publication_date' in detailed_jobs.columns:
+        detailed_jobs['publication_date'] = pd.to_datetime(detailed_jobs['publication_date']).dt.strftime('%Y-%m-%d')
+
     st.write(f"Showing **{len(detailed_jobs)}** open positions requiring **'{selected_skill}'**:")
     
     st.dataframe(
