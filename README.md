@@ -1,32 +1,16 @@
-# 📊 Live Tech Job-Market Analyzer
-🔗 **Live Demo:** [Click Here to View the Interactive Dashboard]
-(https://tech-job-market-analyzer.streamlit.app/)
+## 🖼️ Dashboard Preview
 
-An automated data pipeline and interactive web dashboard that analyzes real-time technical skill demands from live tech job postings.
+<table>
+  <tr>
+    <td width="50%">
+      <h4 align="center">1. Skill & Company Analytics</h4>
+      <img src="./dashboard_overview.png" alt="Skill Demand Overview" width="100%">
+    </td>
+    <td width="50%">
+      <h4 align="center">2. Skill Drill-Down Table</h4>
+      <img src="./drilldown_table.png" alt="Skill Drill-Down Table" width="100%">
+    </td>
+  </tr>
+</table>
 
-## 🚀 Features
-- **Live Data Ingestion:** Fetches real-time job listings from the Remotive API.
-- **Skill Extraction:** Cleans and normalizes job descriptions to compute skill demand frequencies.
-- **Data Transformation:** Formats extracted insights into structured Pandas DataFrames and exports to CSV.
-- **Interactive Visualizations:** Renders live metrics and interactive Plotly bar charts using Streamlit.
-
-## 🛠️ Tech Stack
-- **Language:** Python
-- **Data Engineering:** `requests`, `pandas`
-- **Visualization:** `streamlit`, `plotly`
-- **Version Control:** Git & GitHub
-
-## 🏃 How to Run Locally
-
-1. Clone the repository:
-git clone https://github.com/Vaishnavi698/tech-job-market-analyzer.git
-cd tech-job-market-analyzer
-
-2. Install dependencies:
-pip install requests pandas streamlit plotly
-
-3. Run the Data Pipeline:
-python main.py
-
-4. Launch the Streamlit Dashboard:
-python -m streamlit run app.py
+*Interactive Streamlit dashboard displaying tracked tech skills, top hiring companies, horizontal skill demand bar charts, and dynamic skill drill-down tables.*
